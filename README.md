@@ -1,9 +1,9 @@
-# [Group name]
+# NameError
 
 **Group members:**
-- A
-- B
-- C
+- Cecilie Ring Westergaard (PJT321)
+- Tobias Rhod Søndergaard (JCZ104)
+- Simon Magaard Skødeberg (HKB674)
 
 **This repository contains:***
 
