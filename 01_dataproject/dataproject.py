@@ -80,11 +80,13 @@ def load_IFOR32(DECILGEN,KOMMUNEDK,varname):
 
     df = df.pivot_table(index=['year', 'municipality'], columns='DECILGEN', values=varname)
     df.columns = [f'{varname}_{c}' for c in df.columns]
-    df[f'{varname}_total'] = df.sum(axis=1) # Calculate total avg_income across
-    df[f'{varname}_top10_share'] = df[f'{varname}_10'] / df[f'{varname}_total'] # Calculate top 10% share of avg_income
+
+    # e. calculate total and top 10% share
+    df[f'{varname}_total'] = df.sum(axis=1)
+    df[f'{varname}_top10_share'] = df[f'{varname}_10'] / df[f'{varname}_total']
 
 
-    # e. reset index and sorts
+    # f. reset index and sorts
     df = df.reset_index().sort_values(by=['municipality'])
 
     return df
