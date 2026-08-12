@@ -1,30 +1,90 @@
+# Import all necessary packages
 import numpy as np
+import pandas as pd
 
-def load_data():
-    """
-    load data function
-    """
+# APIs
+from dstapi import DstApi
 
-    # a. allocate data container
-    data = {}
+# plotting
+import matplotlib.pyplot as plt
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+plt.rcParams.update({'axes.grid':True,'grid.color':'black','grid.alpha':'0.25','grid.linestyle':'--'})
+plt.rcParams.update({'font.size': 14})
 
-    # b. fill 
-    data['GDP'] = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
+# Create a function to load IFOR41.
+def load_IFOR41(ULLIG,KOMMUNEDK,varname):
 
-    return data
+    params = {
+        'table': 'IFOR41',
+        'format': 'BULK', # semicolon separated file
+        'lang': 'en',
+        'variables': [
+            {'code': 'ULLIG', 'values': [ULLIG]},
+            {'code': 'KOMMUNEDK', 'values': [KOMMUNEDK]},
+            {'code': 'Tid', 'values': ['*']},
+            ]
+    }    
 
-def process_data(data):
-    """
-    process data function
-    """
+    # b. download
+    df = DstApi('IFOR41').get_data(params=params)
 
-    # a. verify data
-    assert 'GDP' in data, "Data must contain 'GDP' key"
+    # c. set types and rename
+    df['TID'] = df['TID'].astype(int)
+    df['INDHOLD'] = df['INDHOLD'].astype(float)
+    df = df.drop(columns=['ULLIG'])
+    df = df.rename(columns={'INDHOLD': varname, 'KOMMUNEDK': 'municipality', 'TID': 'year'})
 
-    # b. take log
-    for k in ['GDP']:
-        
-        v = data[k]
-        data[f'log_{k}'] = np.log(v)
+    # e. sorts
+    df = df.sort_values(by=['municipality'])
+    
+    return df
 
-    return data
+# Create a function to load IFOR32.
+def load_IFOR32(DECILGEN,KOMMUNEDK,varname):
+
+    params = {
+        'table': 'IFOR32',
+        'format': 'BULK', # semicolon separated file
+        'lang': 'en',
+        'variables': [
+            {'code': 'DECILGEN', 'values': [DECILGEN]},
+            {'code': 'KOMMUNEDK', 'values': [KOMMUNEDK]},
+            {'code': 'Tid', 'values': ['*']},
+            ]
+    }
+
+    dict_deci = {row['id']: row['text'] for i,row in DstApi('IFOR32').variable_levels('DECILGEN',language='en').iterrows()}
+
+    # b. download
+    df = DstApi('IFOR32').get_data(params=params)
+
+    # c. set types and rename
+    df['TID'] = df['TID'].astype(int)
+    df['INDHOLD'] = df['INDHOLD'].astype(float)
+    df = df.rename(columns={'INDHOLD': varname, 'KOMMUNEDK': 'municipality', 'TID': 'year'})
+    
+
+    # d. clean data
+    df['DECILGEN'] = df.DECILGEN.replace(
+        {dict_deci['1DC']: '1',
+        dict_deci['2DC']: '2',
+        dict_deci['3DC']: '3',
+        dict_deci['4DC']: '4',
+        dict_deci['5DC']: '5',
+        dict_deci['6DC']: '6',
+        dict_deci['7DC']: '7',
+        dict_deci['8DC']: '8',
+        dict_deci['9DC']: '9',
+        dict_deci['10DC']: '10'
+        })
+
+    df = df.pivot_table(index=['year', 'municipality'], columns='DECILGEN', values=varname)
+    df.columns = [f'{varname}_{c}' for c in df.columns]
+    df[f'{varname}_total'] = df.sum(axis=1) # Calculate total avg_income across
+    df[f'{varname}_top10_share'] = df[f'{varname}_10'] / df[f'{varname}_total'] # Calculate top 10% share of avg_income
+
+
+    # e. reset index and sorts
+    df = df.reset_index().sort_values(by=['municipality'])
+
+    return df
