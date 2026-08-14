@@ -15,7 +15,12 @@ plt.rcParams.update({'font.size': 14})
 
 # Create a function to load IFOR41.
 def load_IFOR41(ULLIG,KOMMUNEDK,varname):
+    """
+    Load and clean data from Statistics Denmark's IFOR41 table for the given
+    unemployment insurance status (ULLIG) and municipalities (KOMMUNEDK).
 
+    Returns a DataFrame with columns ['municipality', 'year', varname].
+    """
     params = {
         'table': 'IFOR41',
         'format': 'BULK', # semicolon separated file
@@ -43,7 +48,14 @@ def load_IFOR41(ULLIG,KOMMUNEDK,varname):
 
 # Create a function to load IFOR32.
 def load_IFOR32(DECILGEN,KOMMUNEDK,varname):
+    """
+    Load and clean data from Statistics Denmark's IFOR32 table for the given
+    income deciles (DECILGEN) and municipalities (KOMMUNEDK), pivoting deciles
+    into separate columns and adding total income and top-10% income share.
 
+    Returns a DataFrame with columns ['year', 'municipality', varname_1..varname_10,
+    varname_total', varname_top10_share'].
+    """
     params = {
         'table': 'IFOR32',
         'format': 'BULK', # semicolon separated file
@@ -95,7 +107,13 @@ def load_IFOR32(DECILGEN,KOMMUNEDK,varname):
 
 # Create a function to load NGLK.
 def load_NGLK(OMRÅDE, BNØGLE, BRUTNETUDG, PRISENHED, varname):
+    """
+    Load and clean data from Statistics Denmark's NGLK table for the given
+    area (OMRÅDE), budget key (BNØGLE), expenditure type (BRUTNETUDG) and
+    price unit (PRISENHED).
 
+    Returns a DataFrame with columns ['municipality', 'year', varname].
+    """
     params = {
         'table': 'NGLK',
         'format': 'BULK', # semicolon separated file
@@ -125,7 +143,12 @@ def load_NGLK(OMRÅDE, BNØGLE, BRUTNETUDG, PRISENHED, varname):
 
 # Create a function to load FOD407.
 def load_FOD407(OMRÅDE, ALDER, varname):
+    """
+    Load and clean data from Statistics Denmark's FOD407 table for the given
+    area (OMRÅDE) and age group (ALDER), dropping rows with non-numeric values.
 
+    Returns a DataFrame with columns ['municipality', 'year', varname].
+    """
     params = {
         'table': 'FOD407',
         'format': 'BULK', # semicolon separated file
@@ -156,7 +179,12 @@ def load_FOD407(OMRÅDE, ALDER, varname):
 
 # Create a function to load STRAFNA7.
 def load_STRAFNA7(OMRÅDE, OVERTRÆD, varname):
+    """
+    Load and clean data from Statistics Denmark's STRAFNA7 table for the given
+    area (OMRÅDE) and type of offense (OVERTRÆD), dropping rows with non-numeric values.
 
+    Returns a DataFrame with columns ['municipality', 'year', varname].
+    """
     params = {
         'table': 'STRAFNA7',
         'format': 'BULK', # semicolon separated file
@@ -187,7 +215,12 @@ def load_STRAFNA7(OMRÅDE, OVERTRÆD, varname):
 
 # Create a function to load BEFOLK3.
 def load_BEFOLK3(OMRÅDE, KØN, ALDER, varname):
+    """
+    Load and clean data from Statistics Denmark's BEFOLK3 table for the given
+    area (OMRÅDE), gender (KØN) and age group (ALDER).
 
+    Returns a DataFrame with columns ['municipality', 'year', varname].
+    """
     params = {
         'table': 'BEFOLK3',
         'format': 'BULK', # semicolon separated file

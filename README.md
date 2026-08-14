@@ -5,7 +5,7 @@
 - Tobias Rhod Søndergaard (JCZ104)
 - Simon Magaard Skødeberg (HKB674)
 
-**This repository contains:***
+**This repository contains:**
 
 1. Data project
 1. Model project
