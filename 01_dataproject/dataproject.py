@@ -11,6 +11,8 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 plt.rcParams.update({'axes.grid':True,'grid.color':'black','grid.alpha':'0.25','grid.linestyle':'--'})
 plt.rcParams.update({'font.size': 14})
 
+################################ Exercise 1 data on inequality ################################
+
 # Create a function to load IFOR41.
 def load_IFOR41(ULLIG,KOMMUNEDK,varname):
 
@@ -213,10 +215,10 @@ def load_BEFOLK3(OMRÅDE, KØN, ALDER, varname):
     return df
 
 
+################################ Exercise 2 Model simulation ################################
 
 
-
-
+# Create a function to simulate the model.
 def simulate(seed=2025, N=50000,
     edu_prob = np.array([0.4, 0.35, 0.25]),
     edu_years = np.array([1, 3, 5]),
@@ -230,80 +232,129 @@ def simulate(seed=2025, N=50000,
     repl_rate = 0.6,
     ben_floor = 0.35):
 
-    rng = np.random.default_rng(seed) # sætter generator op. bruges senere til .choice, .random og .lognormal
-    ages = np.arange(18, 66) # danner en array m. tallene 18, 19, ..., 64, 65. (66 kommer ikke med)
-    T = len(ages) # parameterværdi som får værdien 66-18 = 48, altså det samlede antal perioder
+    """
+    Simulate a life-cycle model of education, employment and income for a panel of individuals.
 
-    # uddannelseslængde per individ: 0=kort, 1=mellem, 2=lang
-    educ = rng.choice(3, size=N, p=edu_prob) # simulerer N gange et udtræk via rng. Udtrækket er et tal af tre muligheder (0,1,2) ud fra de tilh. ssh. fra edu_prob. Dette er lodtrækning af education.
-    # muligt problem med educ. Et tal per år i dataframe "out". Bør der ikke være en array med 50k tal i t = 0 (eller bare alle rows) som angiver hvilken udd hvert individ har?
+    Each of the N individuals is randomly assigned one of three education levels (0, 1, 2),
+    which determines how many periods they spend in education and the initial level and
+    growth rate of their human capital. After finishing education, individuals transition
+    stochastically between employment and unemployment each period, and their human capital
+    grows (while employed) or depreciates (while unemployed), subject to a log-normal shock.
+    Income is derived from human capital while employed, from a fixed grant while in
+    education, and from a fraction of last job income (subject to a floor) while unemployed.
 
-    # slå individspecifikke parametre op via educ
-    S_i = edu_years[educ] # array der for hvert id angiver edu_years ud fra deres educ.
-    h0_i = ini_hum_cap[educ] # array der tilsv. angiver hver individs initiale human capital ud fra deres educ.
-    Delta_i = gro_hum_cap[educ] # tilsvarende hvert individs vækstrate i human capital ud fra educ.
+    Parameters
+    ----------
+    seed : int
+        Seed for the random number generator, ensuring reproducible simulations.
+    N : int
+        Number of individuals to simulate.
+    edu_prob : np.ndarray, shape (3,)
+        Probability of being assigned each of the three education levels.
+    edu_years : np.ndarray, shape (3,)
+        Number of periods spent in education for each education level.
+    ini_hum_cap : np.ndarray, shape (3,)
+        Initial human capital level upon finishing education, for each education level.
+    gro_hum_cap : np.ndarray, shape (3,)
+        Per-period growth rate of human capital while employed, for each education level.
+    depreciation : float
+        Per-period depreciation rate of human capital while not employed.
+    std_of_shock : float
+        Standard deviation of the log-normal shock applied to human capital each period.
+    job_fin_prob : float
+        Probability that an unemployed (non-student) individual finds a job in a given period.
+    job_sep_prob : float
+        Probability that an employed individual loses their job in a given period.
+    stu_gra : float
+        Income (student grant) received while in education.
+    repl_rate : float
+        Replacement rate applied to an individual's last job income while unemployed.
+    ben_floor : float
+        Minimum income floor applied in every period, regardless of employment status.
 
-    income = np.full((T, N), np.nan) # danner en tom array med dimensionerne T x N (48 x 50k) med værdierne NaN, som bliver overwritten i takt med at hvert år simuleres
-    employed = np.zeros((T, N), dtype=bool) # tilsvarende for employment status (en boolean var) som, som udgangspunkt har værdien False over det hele
-    h = np.zeros((T, N)) # tilsvarende for human capital level der som udgangspunkt sættes til 0
-    last_job_income = np.full(N, ben_floor)  # tom array som skal bruges til at angive individers forrige løn. Den sættes som udgangspunkt til benefit floor, fordi den senere skal bruges til at angive individers indkomst når de er arbejdsløse.
-    ever_employed = np.zeros(N, dtype=bool) # tom boolean array som skal bruges til at angive om individer nogensinde har været employed
+    Returns
+    -------
+    dict
+        Dictionary with the following keys:
 
-    for t in range(T): # hovedloopet for funktionen der kører for hver af de 48 perioder
-        in_education = t < S_i # angiver først om et individ statig er under udd (hvis udd-længde er længere end antal perioder der er simuleret)
+        - "ages" : np.ndarray, shape (T,) - Ages simulated (18 to 65).
+        - "income" : np.ndarray, shape (T, N) - Income of each individual in each period.
+        - "employed" : np.ndarray, shape (T, N) - Employment status of each individual in each period.
+        - "h" : np.ndarray, shape (T, N) - Human capital of each individual in each period.
+        - "educ" : np.ndarray, shape (N,) - Education level (0, 1, or 2) of each individual.
+    """
+    #a. Creates objects for later use
+    rng = np.random.default_rng(seed)
+    ages = np.arange(18, 66) 
+    T = len(ages)
 
-        # --- Beskæftigelsesstatus (Markovkæde) ---
-        if t == 0: # dvs. i første periode (alder 18)
-            # Første periode starter som ledig (uden for uddannelse håndteres nedenfor)
-            employed[t] = False # række t=0 af array employed indtastes False for alle fordi ingen som udgangspunkt har job fordi alle uddannelser tager min. et år
-        else: # for perioder der ikke er den første
-            was_employed = employed[t - 1] # angiver om en person var employed i sidste periode ud fra forrige værdi af employed-array
-            newly_employed = (~was_employed) & (rng.random(N) < job_fin_prob) # hvis individ IKKE var employed i forrige periode OG et tilfældigt tal der trækkes mellem 0 og 1 er lavere end job finding prob., så er personen kommet i job.
-            # det er en metode der bruges til at realisere om en person kommer i arbejde, altså at trække et tilfældigt tal mellem 0 og 1 og sammenholde det med en grænse.
-            newly_unemployed = was_employed & (rng.random(N) < job_sep_prob) # tilsvarende for de hvor was_employed = True, trækkes et tal mellem 0 og 1 og sammenholdes med job_separation rate. 
-            employed[t] = (was_employed & ~newly_unemployed) | newly_employed # employment status for række t i array'en opdateres med første part (om person var i arbejde og har False på "blev arbejdsløs") eller anden part (om person er blev nyligt ansat).
-            #For en employed person vil en af disse være True og for en unemployed person vil begge disse være False, så employed[t] bliver True kun for de der er i arbejde.
+    # b. Simulate education levels for each individual
 
-        # Uden for arbejdsmarked hvis stadig i uddannelse
-        employed[t] = employed[t] & ~in_education # for personer der er i uddannelse i periode t (anden del betyder "in_education = False) vil employed[t] overwrites med False.
+    # b.i Set intial education and human capital levels
+    educ = rng.choice(3, size=N, p=edu_prob) # Each individual is assigned an education level (0, 1, or 2).
+    
+    S_i = edu_years[educ] 
+    h0_i = ini_hum_cap[educ]
+    Delta_i = gro_hum_cap[educ]
 
-        # --- Humankapital ---
-        psi = rng.lognormal(-0.5 * std_of_shock**2, std_of_shock, size=N) # simulerer chokket for hvert individ (kode fra opgavebeskrivelse)
+    # b.ii Initialize arrays to store simulation results
+    income = np.full((T, N), np.nan)
+    employed = np.zeros((T, N), dtype=bool)
+    h = np.zeros((T, N))
+    last_job_income = np.full(N, ben_floor)
+    ever_employed = np.zeros(N, dtype=bool)
 
-        if t > 0: # for perioder der ikke er den første periode
-            h_prev = h[t - 1] # angiver forrige periodes human capital (vil være 0 for periode t = 1)
-            h_new = np.where( # angiver opdateret human capital
-                employed[t], # hvis employed i periode t er sandt (minder lidt om et if-statement i excel), så:
-                h_prev * (1 + Delta_i) * psi, # ...skal h_new være den gamle, plus væksten og chokkets indflydelse som angivet i opgaven
-                h_prev * (1 - depreciation) * psi, # ...hvis ikke personen var employed, skal h_new være den gamle, minus indflydelsen fra depreciation og chokket.
-            )
-            # kun opdatér for dem der ikke er i uddannelse
-            h[t] = np.where(in_education, h_prev, h_new) # tilsvarende if-statement: hvis in_education = true, skal h[t] bare være lig med h_prev. Hvis den var false, skal den opdateres til h_new
+    # c. simulate the model over T periods
+    for t in range(T):
+        in_education = t < S_i
+
+        # c.i Employment status
+        if t == 0:
+            employed[t] = False # initially, all individuals are students
         else:
-            h[t] = h0_i  # ved simuleringens start (dvs. periode t = 0) skal h[t] sættes til den initiale niveau givet ved uddannelsens type.
+            was_employed = employed[t - 1]
+            newly_employed = (~was_employed) & (rng.random(N) < job_fin_prob)
+            newly_unemployed = was_employed & (rng.random(N) < job_sep_prob)
 
-        # fanger overgangen: individer der lige er færdige med uddannelsen
-        # denne periode skal starte med deres uddannelsesspecifikke humankapital
-        just_finished = (t > 0) & (S_i == t) # altså for de hvor uddannelseslængden er lig antallet af perioder simuleret
-        h[t] = np.where(just_finished, h0_i, h[t]) # ...skal h[t] opdateres til det initiale niveau angivet af uddannelsens type (men er den ikke det i forvejen grundet if/else-statementet lige ovenfor?)
+            employed[t] = (was_employed & ~newly_unemployed) | newly_employed
 
-        # --- Indkomst ---
-        income[t] = np.where( # income-array'en (fyldt med NaN'er) skal have række t erstattet med student grant for de der har in_education = True. 
+        employed[t] = employed[t] & ~in_education # Students are unemployed
+
+        # c.ii Human capital evolution
+        psi = rng.lognormal(-0.5 * std_of_shock**2, std_of_shock, size=N) # Creates human capital shocks
+
+        if t > 0: # Updates human capital for people in the work force and keeps it constant for students
+            h_prev = h[t - 1]
+            h_new = np.where(
+                employed[t],
+                h_prev * (1 + Delta_i) * psi,
+                h_prev * (1 - depreciation) * psi,
+            )
+            
+            h[t] = np.where(in_education, h_prev, h_new)
+        else:
+            h[t] = h0_i  
+
+        
+        just_finished = (t > 0) & (S_i == t)
+        h[t] = np.where(just_finished, h0_i, h[t])
+
+        # c.iii Income evolution
+        income[t] = np.where(
             in_education,
             stu_gra,
-            np.where(employed[t], h[t], repl_rate * last_job_income), # For de der ikke har in_education = True, skal (nyt if-statement) de have income = human capital, HVIS de har employed[t] = True. Hvis de har employed = False skal de have replacement rate x deres gamle løn.
+            np.where(employed[t], h[t], repl_rate * last_job_income),
         )
-        income[t] = np.maximum(income[t], ben_floor)  # for de hvis indkomst er faldet under benefit floor grundet replacement rate, får de i stedet benefit floor.
-        #Tjek lige om replacement rate ganges på for hver periode uden job, for det virker til at den bare skal gange på seneste løn under job og så forblive dette indtil man få job igen.
 
-        # Opdatér "sidste jobs indkomst" og ever_employed for dem i beskæftigelse
-        last_job_income = np.where(employed[t], h[t], last_job_income) # opdaterer række t i last_job_income til at være h[t] for de ansatte og last_job_income for de andre.
-        #Dette er vel så egentlig beviset for at ovenstående bekymring vedr. påganget replacement rate, ikke er en realitet, fordi at last_job_income ikke faldet, bare fordi man har været arbejdsløs en periode
-        ever_employed = ever_employed | employed[t] # ever employed indikatoren opdateres. True hvis ever_employed i forvejen var true eller hvis employed i periode t er true. False hvis begge er false.
+        income[t] = np.maximum(income[t], ben_floor)  # No one can earn less than the benefit floor
+
+        last_job_income = np.where(employed[t], income[t], last_job_income)
+
+        ever_employed = ever_employed | employed[t]
 
     return {
         "ages": ages,
-        "income": income,       # (T, N) array
+        "income": income,
         "employed": employed,
         "h": h,
         "educ": educ,
