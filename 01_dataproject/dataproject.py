@@ -329,7 +329,6 @@ def simulate(seed=2025, N=50000,
     S_i = edu_years[educ] 
     h0_i = ini_hum_cap[educ]
     Delta_i = gro_hum_cap[educ]
-
     # b.ii Initialize arrays to store simulation results
     income = np.full((T, N), np.nan)
     employed = np.zeros((T, N), dtype=bool)
