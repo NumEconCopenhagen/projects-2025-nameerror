@@ -263,7 +263,9 @@ def simulate(seed=2025, N=50000,
     job_sep_prob = 0.05,
     stu_gra = 0.45,
     repl_rate = 0.6,
-    ben_floor = 0.35):
+    ben_floor = 0.35,
+    more_risk=False, 
+    sep_shock_max=0.10):
 
     """
     Simulate a life-cycle model of education, employment and income for a panel of individuals.
@@ -345,8 +347,13 @@ def simulate(seed=2025, N=50000,
             employed[t] = False # initially, all individuals are students
         else:
             was_employed = employed[t - 1]
+            #add the possibility of more risk of job seperation:
+            sep_shock = rng.uniform(0.00, sep_shock_max, size=N)
+            job_sep_prob_i = job_sep_prob + (sep_shock / S_i) * more_risk
+            job_sep_prob_i = np.clip(job_sep_prob_i, 0.0, 1.0)
+
             newly_employed = (~was_employed) & (rng.random(N) < job_fin_prob)
-            newly_unemployed = was_employed & (rng.random(N) < job_sep_prob)
+            newly_unemployed = was_employed & (rng.random(N) < job_sep_prob_i)
 
             employed[t] = (was_employed & ~newly_unemployed) | newly_employed
 
