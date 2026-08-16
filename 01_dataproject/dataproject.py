@@ -15,12 +15,12 @@ plt.rcParams.update({'font.size': 14})
 
 # Create a function to load IFOR41.
 def load_IFOR41(ULLIG,KOMMUNEDK,varname):
-    """
+    '''
     Load and clean data from Statistics Denmark's IFOR41 table for the given
     unemployment insurance status (ULLIG) and municipalities (KOMMUNEDK).
 
     Returns a DataFrame with columns ['municipality', 'year', varname].
-    """
+    '''
     params = {
         'table': 'IFOR41',
         'format': 'BULK', # semicolon separated file
@@ -48,14 +48,14 @@ def load_IFOR41(ULLIG,KOMMUNEDK,varname):
 
 # Create a function to load IFOR32.
 def load_IFOR32(DECILGEN,KOMMUNEDK,varname):
-    """
+    '''
     Load and clean data from Statistics Denmark's IFOR32 table for the given
     income deciles (DECILGEN) and municipalities (KOMMUNEDK), pivoting deciles
     into separate columns and adding total income and top-10% income share.
 
     Returns a DataFrame with columns ['year', 'municipality', varname_1..varname_10,
     varname_total', varname_top10_share'].
-    """
+    '''
     params = {
         'table': 'IFOR32',
         'format': 'BULK', # semicolon separated file
@@ -107,13 +107,13 @@ def load_IFOR32(DECILGEN,KOMMUNEDK,varname):
 
 # Create a function to load NGLK.
 def load_NGLK(OMRÅDE, BNØGLE, BRUTNETUDG, PRISENHED, varname):
-    """
+    '''
     Load and clean data from Statistics Denmark's NGLK table for the given
     area (OMRÅDE), budget key (BNØGLE), expenditure type (BRUTNETUDG) and
     price unit (PRISENHED).
 
     Returns a DataFrame with columns ['municipality', 'year', varname].
-    """
+    '''
     params = {
         'table': 'NGLK',
         'format': 'BULK', # semicolon separated file
@@ -143,12 +143,12 @@ def load_NGLK(OMRÅDE, BNØGLE, BRUTNETUDG, PRISENHED, varname):
 
 # Create a function to load FOD407.
 def load_FOD407(OMRÅDE, ALDER, varname):
-    """
+    '''
     Load and clean data from Statistics Denmark's FOD407 table for the given
     area (OMRÅDE) and age group (ALDER), dropping rows with non-numeric values.
 
     Returns a DataFrame with columns ['municipality', 'year', varname].
-    """
+    '''
     params = {
         'table': 'FOD407',
         'format': 'BULK', # semicolon separated file
@@ -179,12 +179,12 @@ def load_FOD407(OMRÅDE, ALDER, varname):
 
 # Create a function to load STRAFNA7.
 def load_STRAFNA7(OMRÅDE, OVERTRÆD, varname):
-    """
+    '''
     Load and clean data from Statistics Denmark's STRAFNA7 table for the given
     area (OMRÅDE) and type of offense (OVERTRÆD), dropping rows with non-numeric values.
 
     Returns a DataFrame with columns ['municipality', 'year', varname].
-    """
+    '''
     params = {
         'table': 'STRAFNA7',
         'format': 'BULK', # semicolon separated file
@@ -215,12 +215,12 @@ def load_STRAFNA7(OMRÅDE, OVERTRÆD, varname):
 
 # Create a function to load BEFOLK3.
 def load_BEFOLK3(OMRÅDE, KØN, ALDER, varname):
-    """
+    '''
     Load and clean data from Statistics Denmark's BEFOLK3 table for the given
     area (OMRÅDE), gender (KØN) and age group (ALDER).
 
     Returns a DataFrame with columns ['municipality', 'year', varname].
-    """
+    '''
     params = {
         'table': 'BEFOLK3',
         'format': 'BULK', # semicolon separated file
@@ -267,7 +267,7 @@ def simulate(seed=2025, N=50000,
     more_risk=False, 
     sep_shock_max=0.10):
 
-    """
+    '''
     Simulate a life-cycle model of education, employment and income for a panel of individuals.
 
     Each of the N individuals is randomly assigned one of three education levels (0, 1, 2),
@@ -312,12 +312,12 @@ def simulate(seed=2025, N=50000,
     dict
         Dictionary with the following keys:
 
-        - "ages" : np.ndarray, shape (T,) - Ages simulated (18 to 65).
-        - "income" : np.ndarray, shape (T, N) - Income of each individual in each period.
-        - "employed" : np.ndarray, shape (T, N) - Employment status of each individual in each period.
-        - "h" : np.ndarray, shape (T, N) - Human capital of each individual in each period.
-        - "educ" : np.ndarray, shape (N,) - Education level (0, 1, or 2) of each individual.
-    """
+        - 'ages' : np.ndarray, shape (T,) - Ages simulated (18 to 65).
+        - 'income' : np.ndarray, shape (T, N) - Income of each individual in each period.
+        - 'employed' : np.ndarray, shape (T, N) - Employment status of each individual in each period.
+        - 'h' : np.ndarray, shape (T, N) - Human capital of each individual in each period.
+        - 'educ' : np.ndarray, shape (N,) - Education level (0, 1, or 2) of each individual.
+    '''
     #a. Creates objects for later use
     rng = np.random.default_rng(seed)
     ages = np.arange(18, 66) 
@@ -392,9 +392,78 @@ def simulate(seed=2025, N=50000,
         ever_employed = ever_employed | employed[t]
 
     return {
-        "ages": ages,
-        "income": income,
-        "employed": employed,
-        "h": h,
-        "educ": educ,
+        'ages': ages,
+        'income': income,
+        'employed': employed,
+        'h': h,
+        'educ': educ,
     }
+
+def gini(y):
+    '''
+    Computes the Gini coefficient for a vector of incomes (or another non-negative variable).
+    
+    Parameters
+    ----------
+    y : array-like
+        Vector of incomes (must be non-negative).
+    
+    Returns
+    -------
+    float
+        The Gini coefficient (between 0 and 1).
+    '''
+    y = np.asarray(y)
+    y = np.sort(y)  # sort in ascending order
+    n = len(y)
+    
+    index = np.arange(1, n + 1)  # rank 1, 2, ..., n
+    
+    return (2 * np.sum(index * y)) / (n * np.sum(y)) - (n + 1) / n
+
+def lorenz_curve(y):
+    y = np.sort(np.asarray(y))
+    cum_y = np.cumsum(y) / np.sum(y)
+    cum_y = np.insert(cum_y, 0, 0)  # start at (0,0)
+    cum_pop = np.linspace(0, 1, len(cum_y))
+    return cum_pop, cum_y
+
+
+def plot_full_sample_gini(income, ages):
+    '''
+    Computes the Gini coefficient and plots the Lorenz curve
+    for the full sample: all individuals, pooled across all ages.
+    '''
+
+    # income has shape (n_ages, N): flattening pools every individual's income
+    # observation at every age into a single vector, so the resulting Gini reflects
+    # both within-age dispersion and life-cycle variation (students vs. senior workers etc.).
+    
+    y = income.flatten()
+    g = gini(y)
+
+    pop_share, income_share = lorenz_curve(y)
+
+    plt.figure(figsize=(6, 6))
+    plt.plot(pop_share, income_share, color='steelblue', label=f'Lorenz curve (Gini = {g:.3f})')
+    plt.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfect equality')
+    plt.fill_between(pop_share, pop_share, income_share, color='steelblue', alpha=0.15)
+    plt.xlabel('Cumulative population share')
+    plt.ylabel('Cumulative income share')
+    plt.title('Lorenz curve for the full sample (all ages pooled)')
+    plt.legend()
+    plt.show()
+
+    return g
+
+def gini_by_age(income, ages):
+    '''
+    Computes the Gini coefficient separately for each age.
+
+    Returns
+    -------
+    pd.DataFrame
+        Columns: 'age' and 'gini'.
+    '''
+    values = np.array([gini(income[t, :]) for t in range(len(ages))])
+    return pd.DataFrame({'age': ages, 'gini': values})
