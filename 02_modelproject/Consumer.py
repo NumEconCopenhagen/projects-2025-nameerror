@@ -237,7 +237,7 @@ class ConsumerClass:
 
         """
 
-        par = self.par
+        
         sol=self.sol
 
         # a. the two grids
@@ -285,7 +285,7 @@ class ConsumerClass:
 
         """
 
-        par = self.par
+        
         sol=self.sol
 
         # a. starting guess
@@ -303,7 +303,7 @@ class ConsumerClass:
         #the optimal shares, the utility at that point and the path
         sol.s1= res.x[0]
         sol.w= res.x[1]
-        _, sol.s2, opt.s3=self.shares(sol.s1, sol.w)
+        _, sol.s2, sol.s3=self.shares(sol.s1, sol.w)
         sol.u=self.value_of_choice(sol.s1, sol.w)   
         sol.path=np.array(path)
         sol.res = res
