@@ -238,7 +238,7 @@ class ConsumerClass:
         """
 
         
-        sol=self.sol
+        sol = SimpleNamespace() #so we can save the solutions found with grid search
 
         # a. the two grids
         s1_vec = np.linspace(0,1,N) #so make the two vectors
@@ -286,7 +286,7 @@ class ConsumerClass:
         """
 
         
-        sol=self.sol
+        sol=SimpleNamespace()
 
         # a. starting guess
         if s0 is None: s0 = np.array([0.5,0.5])
