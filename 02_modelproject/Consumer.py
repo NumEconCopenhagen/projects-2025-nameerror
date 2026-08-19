@@ -238,7 +238,7 @@ class ConsumerClass:
         """
 
         par = self.par
-        opt = SimpleNamespace()
+        sol=self.sol
 
         # a. the two grids
         s1_vec = np.linspace(0,1,N) #so make the two vectors
@@ -253,20 +253,20 @@ class ConsumerClass:
         i,j=np.unravel_index(i_best, u_grid.shape) #gives us the nested budget shares that maximise u
 
         # d. results
-        opt.s1=s1_grid[i,j]
-        opt.w= w_grid[i,j]
-        _, opt.s2, opt.s3=self.shares(opt.s1, opt.w)
-        opt.u=u_grid[i,j]
+        sol.s1=s1_grid[i,j]
+        sol.w= w_grid[i,j]
+        _, sol.s2, sol.s3=self.shares(sol.s1, sol.w)
+        sol.u=u_grid[i,j]
         
-        opt.s1_grid = s1_grid
-        opt.w_grid=w_grid 
-        opt.u_grid=u_grid # (needed for the figures)
+        sol.s1_grid = s1_grid
+        sol.w_grid=w_grid 
+        sol.u_grid=u_grid # (needed for the figures)
 
         # e. print the results:
         if do_print:
-            print(f's1 = {opt.s1:.4f}, w = {opt.w:.4f}, budget shares = ({opt.s1:.4f}, {opt.s2:.4f}, {opt.s3:.4f}), u = {opt.u:.6f}')
+            print(f's1 = {sol.s1:.4f}, w = {sol.w:.4f}, budget shares = ({sol.s1:.4f}, {sol.s2:.4f}, {sol.s3:.4f}), u = {sol.u:.6f}')
 
-        return opt
+        return sol
 
     def solve(self,s0=None,do_print=True,**kwargs):
         """ solve with L-BFGS-B
@@ -286,7 +286,7 @@ class ConsumerClass:
         """
 
         par = self.par
-        opt = SimpleNamespace()
+        sol=self.sol
 
         # a. starting guess
         if s0 is None: s0 = np.array([0.5,0.5])
@@ -301,14 +301,14 @@ class ConsumerClass:
 
         # d. results
         #the optimal shares, the utility at that point and the path
-        opt.s1= res.x[0]
-        opt.w= res.x[1]
-        _, opt.s2, opt.s3=self.shares(opt.s1, opt.w)
-        opt.u=self.value_of_choice(opt.s1, opt.w)   
-        opt.path=np.array(path)
-        opt.res = res
+        sol.s1= res.x[0]
+        sol.w= res.x[1]
+        _, sol.s2, opt.s3=self.shares(sol.s1, sol.w)
+        sol.u=self.value_of_choice(sol.s1, sol.w)   
+        sol.path=np.array(path)
+        sol.res = res
 
         if do_print:
-            print(f's1 = {opt.s1:.4f}, w = {opt.w:.4f}, u = {opt.u:.6f}')
+            print(f's1 = {sol.s1:.4f}, w = {sol.w:.4f}, u = {sol.u:.6f}')
 
-        return opt
+        return sol
