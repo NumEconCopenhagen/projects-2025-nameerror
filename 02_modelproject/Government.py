@@ -1,9 +1,5 @@
-from types import SimpleNamespace
-
 import numpy as np
-
 from scipy import optimize
-
 from Consumer import ConsumerClass
 
 class GovernmentClass(ConsumerClass):
@@ -126,10 +122,10 @@ class GovernmentClass(ConsumerClass):
         # a. what does the consumer buy, given the taxes?
         #    .quantities() takes the nested shares (s1,w) from the solution
         if opt is None: opt = self.solve(do_print=False)
-
-        pass
+        x1,x2,x3 = self.quantities(opt.s1,opt.w)
 
         # b. the lump-sum tax, plus the product tax on each good
+        R = par.T + par.tau1*par.p1_pre*x1 + par.tau2*par.p2_pre*x2 + par.tau3*par.p3_pre*x3
 
         return R
 
@@ -147,12 +143,21 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. build the tax dict: tau on the goods in `goods`, 0 on the rest
+        taus = {f'tau{j}': (tau if j in goods else 0.0) for j in (1,2,3)}
+        self.set_taxes(T=0.0,**taus)
+
+        # b. solve the consumer's problem under these taxes
+        opt = self.solve(do_print=False)
+
+        # c. revenue and utility at that solution
+        R = self.tax_revenue(opt)
+        u = opt.u
 
         return R,u
 
     def revenue_and_utility_lump_sum(self,T):
-        """ the same, for a lump-sum tax of T
+        """ revenue and utility for a lump-sum tax of T
 
         Args:
 
@@ -164,7 +169,15 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. build the tax dict: lump-sum tax T, 0 on the rest
+        self.set_taxes(T=T,**{f'tau{j}': 0.0 for j in (1,2,3)})
+
+        # b. solve the consumer's problem under these taxes
+        opt = self.solve(do_print=False)
+
+        # c. revenue and utility at that solution
+        R = self.tax_revenue(opt)
+        u = opt.u
 
         return R,u
 
@@ -193,7 +206,22 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. grid over the tax rate
+        tau_vec = np.linspace(0,tau_max,N)
+
+        # b. revenue at every point in the grid
+        R_vec = np.empty(N)
+        for i,tau in enumerate(tau_vec):
+            R_vec[i],_ = self.revenue_and_utility(tau,goods=goods)
+
+        # c. the best point
+        i_best = np.argmax(R_vec)
+        tau = tau_vec[i_best]
+        R = R_vec[i_best]
+
+        # d. warn if the grid ran out before the curve turned over
+        if tau == tau_max:
+            print(f'Warning: revenue is still rising at tau_max = {tau_max:.2f} for goods {goods}. No top found in this range.')
 
         return tau,R
 
@@ -219,6 +247,16 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. revenue minus the target, as a function of tau alone
+        def f(tau):
+            R,_ = self.revenue_and_utility(tau,goods=goods)
+            return R - R_target
+
+        # b. root-find, catching the case where R_target is unreachable
+        try:
+            res = optimize.root_scalar(f,bracket=bracket,method='brentq')
+            tau = res.root
+        except ValueError:
+            tau = np.nan
 
         return tau
