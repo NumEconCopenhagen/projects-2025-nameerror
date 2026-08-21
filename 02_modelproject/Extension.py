@@ -2,11 +2,11 @@ import numpy as np
 from Government import GovernmentClass
 
 class PigouvianGovernmentClass(GovernmentClass):
-    """ extends GovernmentClass with a per-unit externality on bus and train travel
+    """ extends GovernmentClass with a per-unit externality on bus travel (with the possibility of adding to other goods)
 
-    Consuming goods 2 and 3 causes an external cost c2, c3 per unit (e.g. congestion,
+    Consuming good 2 causes an external cost of c2 per unit (e.g. congestion,
     emissions) that the consumer's own utility does not see. Social welfare is private
-    utility net of this cost: W = u - c2*x2 - c3*x3.
+    utility net of this cost: W = u - c2*x2.
 
     The revenue-maximizing tax rate from GovernmentClass.max_revenue() ignores this
     cost entirely, since revenue leaves the model. The welfare-maximizing rate found
