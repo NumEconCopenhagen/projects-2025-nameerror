@@ -1,3 +1,4 @@
+# Import all necessary packages
 import numpy as np
 from scipy import optimize
 from Consumer import ConsumerClass

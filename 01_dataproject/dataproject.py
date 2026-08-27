@@ -1,12 +1,12 @@
 # Import all necessary packages
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 # APIs
 from dstapi import DstApi
 
 # plotting
-import matplotlib.pyplot as plt
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 plt.rcParams.update({'axes.grid':True,'grid.color':'black','grid.alpha':'0.25','grid.linestyle':'--'})
 plt.rcParams.update({'font.size': 14})

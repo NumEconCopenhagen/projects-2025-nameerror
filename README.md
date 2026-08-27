@@ -39,4 +39,4 @@ HKB674:
 PJT321:
 JCZ104:
 
-*All code can be run with a standard Anaconda Distribution for Python 3.14 and requires the dstapi package: pip install git+https://github.com/alemartinello/dstapi.*
+*All code can be run with a standard Anaconda Distribution for Python 3.14 but requires the dstapi package: pip install git+https://github.com/alemartinello/dstapi.*

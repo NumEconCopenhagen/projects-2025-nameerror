@@ -1,3 +1,4 @@
+# Import all necessary packages
 import numpy as np
 from Government import GovernmentClass
 
