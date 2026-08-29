@@ -134,14 +134,84 @@ class SolowModelClass:
 
         return sim
 
+    #From here, we have implemented the necessary extra functions:
     # the savings path s_t = s_bar + (s0-s_bar)*phi**t
-    def s_path(self,s0,phi):
-        raise NotImplementedError
+    def s_path(self, s0, phi, s_long_run=None):
+        """ construct the time-varying savings-rate path
+
+        Args:
+
+            s0 (float): initial savings rate, s_0 in [0,1]
+            phi (float): speed toward s_bar parameter, phi in [0,1)
+            s_long_run (float,optional): the level the rate returns to as t -> inf. If None, par.s_bar is used
+
+        Returns:
+
+            (ndarray): s_t for t = 0,1,...,par.T-1
+
+        """
+
+        par = self.par
+        if s_long_run is None:
+            s_long_run = par.s_bar
+
+        sr = np.empty(par.T)  # savings rate each period
+
+        for t in range(par.T):
+            sr[t] = s_long_run + (s0 - s_long_run)*phi**t
+
+        return sr
 
     # the discounted sum of log(c_t)
     def welfare(self,c):
-        raise NotImplementedError
-
+        """ discounted lifetime utility of a consumption path
+ 
+        Args:
+ 
+            c (ndarray): consumption per worker, c_0,...,c_{T-1}
+ 
+        Returns:
+ 
+            (float): W = sum_{t=0}^{T-1} beta**t * log(c_t)
+ 
+        """
+        par=self.par
+        t = np.arange(par.T) # holds all time periods
+        return np.sum(par.beta**t * np.log(c))
+        
     # welfare of the savings rule (s0,phi)
-    def evaluate(self,s0,phi):
-        raise NotImplementedError
+    def evaluate(self,s0,phi, s_long_run=None):
+        """ simulate the savings rule and return welfare
+
+        Chain: self.s_path(...) -> self.simulate(...) -> self.welfare(...)
+        As a side effect, self.sim holds the simulated path afterwards.
+
+     """
+
+        sr = self.s_path(s0,phi,s_long_run)
+        c = self.simulate(sr).c
+        return self.welfare(c)
+
+
+    def s_path_ext(self,s0,lam,gam,s_long_run=None):
+        """ power-law savings rate path as our extension: 
+        s_t = s_long_run + (s0-s_long_run)/(1+lam*t)**gam
+        """
+        par = self.par
+        if s_long_run is None:
+            s_long_run= par.s_bar #So we can also run it with fewer parameters
+        
+        spe=np.empty(par.T)
+        for t in range(par.T):
+            spe[t] = s_long_run + (s0-s_long_run)/(1+lam*t)**gam
+        
+        return spe
+
+
+    def evaluate_ext(self,s0,lam,gam,s_long_run=None):
+        """simulate the new savings rule and return welfare
+        build in the same way as evaluate above
+        """
+        sr = self.s_path_ext(s0,lam,gam,s_long_run)
+        c = self.simulate(sr).c
+        return self.welfare(c)
