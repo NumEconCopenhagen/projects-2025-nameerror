@@ -77,14 +77,83 @@ class PortfolioModelClass:
 
         return W**(1-par.gamma)/(1-par.gamma)
 
-    # the share of wealth in the risky asset after trading, and the amount traded
+    
     def trade(self,theta):
-        raise NotImplementedError
+        trade_indicator = np.abs(theta - self.par.theta_star) > self.par.Delta 
 
-    # simulate all N portfolios forward T periods
-    def simulate(self,R=None):
-        raise NotImplementedError
+        theta_post = np.where(trade_indicator, self.par.theta_star, theta) 
 
-    # the numbers to report for a rule, including expected utility
+        amount_traded = np.abs(theta_post - theta)
+
+        return theta_post, amount_traded, trade_indicator
+
+
+    def simulate(self, R=None):
+        par = self.par
+        sim = self.sim
+
+        if R is None:
+            R = self.draw_returns()
+
+        total_return_riskfree = np.exp(par.r)
+
+        W = np.empty((par.N, par.T+1))
+        theta = np.empty((par.N, par.T+1))
+        amount_traded = np.empty((par.N, par.T)) 
+
+        W[:,0] = par.W0
+        theta[:,0] = par.theta_star
+
+        for t in range(par.T):
+            theta_post, amount_traded_t, _ = self.trade(theta[:,t])
+            
+            amount_traded[:,t] = amount_traded_t   
+
+            W_post = W[:,t] * (1 - par.tau*amount_traded_t)
+
+            W_risky = theta_post * W_post * R[:,t]
+            W_safe = (1 - theta_post) * W_post * total_return_riskfree
+
+            W[:,t+1] = W_risky + W_safe
+            theta[:,t+1] = W_risky / W[:,t+1]
+
+        sim.R = R
+        sim.W = W
+        sim.theta = theta
+        sim.amount_traded = amount_traded  
+
+        return sim
+        
+
     def summary(self):
-        raise NotImplementedError
+        """ compute the six summary numbers for the current simulation results
+
+        Returns:
+
+            (dict): the six numbers, keyed by name
+
+        """
+
+        par = self.par
+        sim = self.sim
+
+        
+        n_trades = (sim.amount_traded > 0).sum(axis=1).mean()
+
+        
+        dist_to_target = np.abs(sim.theta[:,:par.T] - par.theta_star).mean()
+
+        
+        W_T = sim.W[:,-1]
+
+        
+        EU = self.u(W_T).mean()
+
+        return {
+            'n_trades': n_trades,
+            'dist_to_target': dist_to_target,
+            'mean_WT': W_T.mean(),
+            'median_WT': np.median(W_T),
+            'p10_WT': np.percentile(W_T,10),
+            'EU': EU,
+        }
