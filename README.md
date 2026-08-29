@@ -47,6 +47,6 @@ Distribution of responsibility:
 - HKB674: Problem 1
 
 *All code can be run with a standard Anaconda Distribution for Python 3.14. Furthermore, the following packages are required:*
-*- The dstapi package:* %pip install `git+https://github.com/alemartinello/dstapi`
-*- The fredapi package:* `%pip install fredapi`
+- The dstapi package:* `%pip install git+https://github.com/alemartinello/dstapi`
+- The fredapi package:* `%pip install fredapi`
 *The exam project's Question 1 additionally requires a free FRED API key (see 03_examproject/Examproject.ipynb for instructions on obtaining one).*
